@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Veranstaltungskalender Fränkische Schweiz – täglich aktualisiert">
+<!-- No analytics, no tracking, no cookies -->
+<title>Veranstaltungen – Fränkische Schweiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cream:#faf7f2;--forest:#2d4a3e;--rust:#c4622d;--gold:#d4a843;
+  --text:#1a1a1a;--muted:#6b6560;--border:#e8e0d5;--card:#ffffff;
+  --tag-bg:#f0ebe2;--tag-text:#5a4a35;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --cream:#1a1a17;--forest:#3d6b5a;--card:#232320;
+    --text:#f0ebe2;--muted:#9a9088;--border:#3a3730;
+    --tag-bg:#2d2a25;--tag-text:#c8b898;
+  }
+}
+body{background:var(--cream);font-family:'DM Sans',sans-serif;color:var(--text);min-height:100vh;font-size:16px}
+a{color:var(--forest)}
+
+/* ── Header ── */
+header{background:var(--forest);padding:1.25rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem}
+.logo{font-family:'Playfair Display',serif;color:#fff;font-size:1.3rem;font-weight:600;line-height:1.2}
+.logo small{color:rgba(255,255,255,.65);display:block;font-size:.75rem;font-weight:400;letter-spacing:.04em;font-family:'DM Sans',sans-serif}
+.badge{background:var(--rust);color:#fff;font-size:.7rem;padding:3px 9px;border-radius:4px;white-space:nowrap}
+
+/* ── Controls ── */
+.controls{background:var(--card);border-bottom:1px solid var(--border);padding:.75rem 1.5rem;display:flex;gap:.65rem;flex-wrap:wrap;align-items:center}
+input[type=text],select{padding:.45rem .7rem;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:.85rem;background:var(--cream);color:var(--text)}
+input[type=text]{flex:1;min-width:150px}
+input[type=text]:focus,select:focus{outline:none;border-color:var(--forest)}
+.btn{padding:.45rem .9rem;border-radius:6px;border:1px solid var(--border);font-family:inherit;font-size:.8rem;cursor:pointer;background:transparent;color:var(--text);white-space:nowrap;transition:background .15s}
+.btn:hover{background:var(--tag-bg)}
+.btn-green{background:var(--forest);color:#fff;border-color:var(--forest)}
+.btn-green:hover{opacity:.88}
+
+/* ── Stats bar ── */
+.statsbar{padding:.5rem 1.5rem;font-size:.75rem;color:var(--muted);display:flex;gap:1.5rem;flex-wrap:wrap;border-bottom:1px solid var(--border);background:var(--card)}
+
+/* ── Content ── */
+.content{padding:1.25rem 1.5rem;max-width:1000px;margin:0 auto}
+
+/* ── Event cards ── */
+.events-grid{display:grid;gap:.75rem}
+.event-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.1rem;display:grid;grid-template-columns:52px 1fr auto;gap:.9rem;align-items:start;transition:box-shadow .2s}
+.event-card:hover{box-shadow:0 3px 14px rgba(0,0,0,.09)}
+.date-block{background:var(--forest);color:#fff;border-radius:7px;text-align:center;padding:.45rem .4rem}
+.date-block .day{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:600;line-height:1}
+.date-block .mon{font-size:.6rem;letter-spacing:.04em;opacity:.75;margin-top:1px}
+.event-title{font-family:'Playfair Display',serif;font-size:1rem;font-weight:600;margin-bottom:.3rem}
+.event-meta{font-size:.75rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:.5rem .9rem;margin-bottom:.4rem}
+.event-desc{font-size:.78rem;color:var(--muted);line-height:1.5;margin-bottom:.45rem}
+.tags{display:flex;gap:.3rem;flex-wrap:wrap}
+.tag{background:var(--tag-bg);color:var(--tag-text);font-size:.67rem;padding:2px 7px;border-radius:4px}
+.actions{display:flex;flex-direction:column;gap:.35rem;align-items:flex-end;padding-top:2px}
+.actions a,.actions button{font-size:.72rem;padding:.28rem .6rem;border-radius:5px;cursor:pointer;font-family:inherit;white-space:nowrap;border:1px solid var(--border);background:transparent;color:var(--text);text-decoration:none;display:inline-block;transition:background .15s}
+.actions a:hover,.actions button:hover{background:var(--tag-bg)}
+.actions .ical-btn{background:var(--rust);color:#fff;border-color:var(--rust)}
+.actions .ical-btn:hover{opacity:.85}
+
+/* ── Modals ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.48);display:flex;align-items:center;justify-content:center;z-index:200;padding:1rem}
+.modal{background:var(--card);border-radius:12px;padding:1.75rem;max-width:440px;width:100%;max-height:90vh;overflow-y:auto}
+.modal h3{font-family:'Playfair Display',serif;font-size:1.15rem;margin-bottom:.9rem;color:var(--text)}
+.modal label{font-size:.8rem;color:var(--muted);display:flex;align-items:center;gap:.5rem;padding:.3rem 0;cursor:pointer}
+.modal label input{accent-color:var(--forest)}
+.modal-footer{display:flex;gap:.6rem;justify-content:flex-end;margin-top:1.1rem}
+
+/* ── States ── */
+.state-box{text-align:center;padding:3rem 1.5rem;color:var(--muted);font-size:.9rem}
+.state-box .icon{font-size:2rem;margin-bottom:.75rem}
+.error-box{background:#fff5f5;border:1px solid #fcc;border-radius:8px;padding:1.25rem;color:#900;font-size:.85rem;margin-bottom:1rem}
+
+/* ── Privacy notice ── */
+.privacy-bar{background:var(--tag-bg);border-top:1px solid var(--border);padding:.6rem 1.5rem;font-size:.72rem;color:var(--muted);text-align:center}
+
+/* ── Responsive ── */
+@media(max-width:520px){
+  .event-card{grid-template-columns:44px 1fr;grid-template-rows:auto auto}
+  .actions{flex-direction:row;grid-column:1/-1;justify-content:flex-start}
+  header{padding:1rem}
+  .controls{padding:.65rem 1rem}
+  .content{padding:1rem}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Fränkische Schweiz <small>Veranstaltungskalender</small></div>
+  <span class="badge" id="update-badge">Lädt…</span>
+</header>
+
+<div class="controls">
+  <input type="text" id="search" placeholder="Suche…" oninput="render()" aria-label="Suche">
+  <select id="cat-filter" onchange="render()" aria-label="Kategorie">
+    <option value="">Alle Kategorien</option>
+  </select>
+  <select id="month-filter" onchange="render()" aria-label="Monat">
+    <option value="">Alle Monate</option>
+  </select>
+  <button class="btn btn-green" onclick="showMonthModal()" aria-label="Monats-iCal herunterladen">📅 Monats-iCal</button>
+</div>
+
+<div class="statsbar" id="statsbar" style="display:none">
+  <span id="stat-shown">0 Veranstaltungen</span>
+  <span id="stat-total"></span>
+  <span id="stat-updated"></span>
+</div>
+
+<div class="content">
+  <div id="root">
+    <div class="state-box"><div class="icon">📅</div>Veranstaltungen werden geladen…</div>
+  </div>
+</div>
+
+<div class="privacy-bar">
+  Diese App erfasst keine Nutzerdaten · Keine Cookies · Kein Tracking · Daten: fraenkische-schweiz.com
+</div>
+
+<!-- Month iCal Modal -->
+<div class="overlay" id="modal" style="display:none" role="dialog" aria-modal="true" aria-label="Monats-iCal">
+  <div class="modal">
+    <h3>Monats-iCal herunterladen</h3>
+    <p style="font-size:.8rem;color:var(--muted);margin-bottom:.9rem">Wähle Monat und Kategorien:</p>
+    <select id="modal-month" style="width:100%;margin-bottom:.9rem" aria-label="Monat auswählen"></select>
+    <div id="modal-cats" role="group" aria-label="Kategorien auswählen"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Abbrechen</button>
+      <button class="btn btn-green" onclick="dlMonthIcal()">⬇ Herunterladen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── Constants ── */
+const DATA_URL = 'data/events.json';
+const MONTHS_DE = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+const MONTHS_S  = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+
+let allEvents = [];
+
+/* ── Boot ── */
+(async function init() {
+  try {
+    const res = await fetch(DATA_URL + '?t=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+
+    allEvents = (json.events || []).map((e, i) => ({ ...e, id: i }));
+
+    // Update badge
+    if (json.fetched_at) {
+      const d = new Date(json.fetched_at);
+      document.getElementById('update-badge').textContent =
+        'Stand: ' + d.toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric' });
+      document.getElementById('stat-updated').textContent =
+        'Aktualisiert: ' + d.toLocaleString('de-DE');
+    } else {
+      document.getElementById('update-badge').textContent = 'Noch kein Datum';
+    }
+
+    if (allEvents.length === 0) {
+      document.getElementById('root').innerHTML =
+        '<div class="state-box"><div class="icon">📭</div>Noch keine Veranstaltungen vorhanden.<br>Der automatische Abruf erfolgt täglich um 8:00 Uhr.</div>';
+      return;
+    }
+
+    buildFilters();
+    render();
+    document.getElementById('statsbar').style.display = 'flex';
+
+  } catch (err) {
+    document.getElementById('root').innerHTML =
+      '<div class="error-box"><strong>Fehler beim Laden:</strong> ' + esc(err.message) + '</div>';
+  }
+})();
+
+/* ── Filters ── */
+function buildFilters() {
+  const cats = [...new Set(allEvents.map(e => e.category).filter(Boolean))].sort();
+  const cf = document.getElementById('cat-filter');
+  cats.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; cf.appendChild(o); });
+
+  const months = [...new Set(allEvents.map(e => (e.date_start || '').slice(0, 7)).filter(Boolean))].sort();
+  const mf = document.getElementById('month-filter');
+  months.forEach(m => {
+    const [y, mo] = m.split('-');
+    const o = document.createElement('option'); o.value = m;
+    o.textContent = MONTHS_DE[+mo - 1] + ' ' + y;
+    mf.appendChild(o);
+  });
+}
+
+function filtered() {
+  const q   = document.getElementById('search').value.toLowerCase();
+  const cat = document.getElementById('cat-filter').value;
+  const mon = document.getElementById('month-filter').value;
+  return allEvents.filter(e => {
+    if (q && !`${e.title} ${e.description} ${e.location}`.toLowerCase().includes(q)) return false;
+    if (cat && e.category !== cat) return false;
+    if (mon && !(e.date_start || '').startsWith(mon)) return false;
+    return true;
+  });
+}
+
+/* ── Render ── */
+function render() {
+  const evs = filtered().sort((a, b) => (a.date_start || '').localeCompare(b.date_start || ''));
+  document.getElementById('stat-shown').textContent = evs.length + ' Veranstaltung' + (evs.length !== 1 ? 'en' : '');
+  document.getElementById('stat-total').textContent = 'Gesamt: ' + allEvents.length;
+
+  if (evs.length === 0) {
+    document.getElementById('root').innerHTML = '<div class="state-box"><div class="icon">🔍</div>Keine Veranstaltungen gefunden.</div>';
+    return;
+  }
+  document.getElementById('root').innerHTML = '<div class="events-grid">' + evs.map(cardHTML).join('') + '</div>';
+}
+
+function cardHTML(e) {
+  const d = e.date_start ? new Date(e.date_start + 'T12:00:00') : null;
+  const day = d ? d.getDate() : '?';
+  const mon = d ? MONTHS_S[d.getMonth()] : '';
+  const dateStr = (e.date_end && e.date_end !== e.date_start)
+    ? fmt(e.date_start) + ' – ' + fmt(e.date_end) : fmt(e.date_start);
+
+  const data = esc(JSON.stringify(e).replace(/'/g, '&apos;'));
+  return `<article class="event-card">
+    <div class="date-block" aria-label="${dateStr}"><div class="day">${day}</div><div class="mon">${mon}</div></div>
+    <div>
+      <div class="event-title">${esc(e.title || 'Unbenannt')}</div>
+      <div class="event-meta">
+        <span>📅 ${dateStr}</span>
+        ${e.time ? `<span>🕐 ${esc(e.time)}</span>` : ''}
+        ${e.location ? `<span>📍 ${esc(e.location)}</span>` : ''}
+      </div>
+      ${e.description ? `<div class="event-desc">${esc(e.description.slice(0, 130))}${e.description.length > 130 ? '…' : ''}</div>` : ''}
+      <div class="tags">${e.category ? `<span class="tag">${esc(e.category)}</span>` : ''}</div>
+    </div>
+    <div class="actions">
+      ${e.url ? `<a href="${esc(e.url)}" target="_blank" rel="noopener noreferrer">→ Details</a>` : ''}
+      <button class="ical-btn" onclick='dlEvent(${data})' aria-label="iCal herunterladen">📥 iCal</button>
+    </div>
+  </article>`;
+}
+
+/* ── iCal helpers ── */
+function toIcalDate(s) { return s ? s.replace(/-/g, '') : null; }
+
+function makeIcal(events, name) {
+  const lines = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0',
+    'PRODID:-//Fraenkische Schweiz Events//DE',
+    'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+    'X-WR-CALNAME:' + name,
+    'X-WR-TIMEZONE:Europe/Berlin'
+  ];
+  events.forEach((e, i) => {
+    const ds = toIcalDate(e.date_start);
+    if (!ds) return;
+    const de = toIcalDate(e.date_end || e.date_start);
+    // DTEND for all-day is exclusive (next day)
+    const deNext = bumpDay(de);
+    lines.push('BEGIN:VEVENT',
+      'UID:fsevt-' + (e.id ?? i) + '-' + ds + '@fraenkische-schweiz.com',
+      'DTSTART;VALUE=DATE:' + ds,
+      'DTEND;VALUE=DATE:' + deNext,
+      'SUMMARY:' + fold(icEsc(e.title || '')),
+      e.location ? 'LOCATION:' + fold(icEsc(e.location)) : null,
+      e.description ? 'DESCRIPTION:' + fold(icEsc(e.description.slice(0, 300))) : null,
+      e.url ? 'URL:' + e.url : null,
+      'END:VEVENT'
+    ).filter(Boolean);  // this works inside push but let's keep it clean
+  });
+  // Re-do without the filter trick
+  const clean = [];
+  const body = lines;
+  body.push('END:VCALENDAR');
+  return body.filter(Boolean).join('\r\n');
+}
+
+function bumpDay(s) {
+  if (!s || s.length !== 8) return s;
+  const d = new Date(s.slice(0,4)+'-'+s.slice(4,6)+'-'+s.slice(6,8)+'T12:00:00');
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0,10).replace(/-/g,'');
+}
+
+function icEsc(s) { return String(s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n'); }
+function fold(s) {
+  // RFC 5545 line folding at 75 chars
+  let out = ''; let line = '';
+  for (const ch of s) {
+    if ((line + ch).length > 74) { out += line + '\r\n '; line = ch; }
+    else line += ch;
+  }
+  return out + line;
+}
+
+function dlBlob(content, filename) {
+  const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+}
+
+function dlEvent(e) {
+  dlBlob(makeIcal([e], e.title || 'Veranstaltung'), slug(e.title) + '.ics');
+}
+
+/* ── Month Modal ── */
+function showMonthModal() {
+  if (!allEvents.length) { alert('Keine Daten geladen.'); return; }
+
+  const months = [...new Set(allEvents.map(e => (e.date_start || '').slice(0, 7)).filter(Boolean))].sort();
+  const ms = document.getElementById('modal-month');
+  ms.innerHTML = months.map(m => {
+    const [y, mo] = m.split('-');
+    return `<option value="${m}">${MONTHS_DE[+mo - 1]} ${y}</option>`;
+  }).join('');
+
+  const cats = [...new Set(allEvents.map(e => e.category).filter(Boolean))].sort();
+  document.getElementById('modal-cats').innerHTML = cats.map(c =>
+    `<label><input type="checkbox" value="${esc(c)}" checked> ${esc(c)}</label>`
+  ).join('') + (cats.length ? `<label style="margin-top:.4rem;border-top:1px solid var(--border);padding-top:.4rem">
+    <input type="checkbox" id="all-cats" checked onchange="document.querySelectorAll('#modal-cats input:not(#all-cats)').forEach(cb=>cb.checked=this.checked)">
+    <em>Alle auswählen / abwählen</em></label>` : '');
+
+  document.getElementById('modal').style.display = 'flex';
+}
+
+function closeModal() { document.getElementById('modal').style.display = 'none'; }
+
+function dlMonthIcal() {
+  const month = document.getElementById('modal-month').value;
+  const selCats = [...document.querySelectorAll('#modal-cats input[type=checkbox]:not(#all-cats):checked')].map(c => c.value);
+  let evs = allEvents.filter(e => (e.date_start || '').startsWith(month));
+  if (selCats.length) evs = evs.filter(e => !e.category || selCats.includes(e.category));
+  if (!evs.length) { alert('Keine Veranstaltungen für diese Auswahl.'); return; }
+  const [y, mo] = month.split('-');
+  const name = 'Fränkische Schweiz – ' + MONTHS_DE[+mo - 1] + ' ' + y;
+  dlBlob(makeIcal(evs, name), 'fraenkische-schweiz-' + month + '.ics');
+  closeModal();
+}
+
+/* ── Utilities ── */
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmt(s) { if (!s) return '?'; const d = new Date(s + 'T12:00:00'); return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+function slug(s) { return String(s||'event').toLowerCase().replace(/[^a-z0-9]+/g,'-').slice(0,40); }
+
+// Close modal on overlay click
+document.getElementById('modal').addEventListener('click', e => { if (e.target === document.getElementById('modal')) closeModal(); });
+</script>
+</body>
+</html>
